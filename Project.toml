@@ -1,0 +1,10 @@
+name = "BoundingVolumeHierarchies"
+uuid = "df143e7c-6862-11e9-3669-9fa6f08867df"
+authors = ["Jon Alm Eriksen <jon.alm.eriksen@protonmail.com>"]
+version = "0.1.0"
+
+[deps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+GeometryTypes = "4d00f742-c7ba-57c2-abde-4428a4b178cb"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

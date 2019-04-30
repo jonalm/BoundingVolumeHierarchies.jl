@@ -21,3 +21,4 @@ end
 
 faces(::AABB) = RectFaceIdxT[(1,3,7,2), (1,2,6,4), (1,4,5,3), (8,6,2,7), (8,7,3,5), (8,5,4,6)]
 normals(::AABB) = PointT[(0,0,-1), (0,-1,0), (-1,0,0), (1,0,0), (0,1,0), (0,0,1)]
+inside(point::PointT, aabb::AABB) =  all(aabb.min .< point .< aabb.max)

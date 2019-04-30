@@ -6,21 +6,12 @@ aligned bounding boxes) of the corresponding faces, identified by min/max
 coordinates.
 """
 struct BoxedCells
-    min::Matrix{FloatT}  #    size N x 3
-    max::Matrix{FloatT}  #    size N x 3
-    center::Matrix{FloatT} #
-    indices::Vector{Int} #  lenght N
+    min::Matrix{FloatT}
+    max::Matrix{FloatT}
+    center::Matrix{FloatT}
+    indices::Vector{Int}
 end
-Base.length(b::BoxedCells) = length(b.indices)
-center(bc::BoxedCells) = 0.5 * (bc.min + bc.max)
 
-function Base.sort!(bc::BoxedCells,i::Int)
-    perm          = sortperm(bc.center[:,i])
-    bc.min[:]     = bc.min[perm,:]
-    bc.max[:]     = bc.max[perm,:]
-    bc.center[:]  = bc.center[perm,:]
-    bc.indices[:] = bc.indices[perm]
-end
 
 """
 BoxedCells constructor from a triangular mesh defined by
@@ -30,50 +21,66 @@ BoxedCells constructor from a triangular mesh defined by
 """
 function BoxedCells(vertices, faces)
     triplets = (vertices[f] for f in faces)
-    min_    = [m[i] for m in (min.(t...) for t in triplets), i in 1:3]
-    max_    = [m[i] for m in (max.(t...) for t in triplets), i in 1:3]
-    center_ = 0.5 * (bc.min + bc.max)
+    min_    = [m[i] for m in (min.(t...) for t in triplets), i in 1:3]'
+    max_    = [m[i] for m in (max.(t...) for t in triplets), i in 1:3]'
+    center_ = 0.5 * (min_ + max_)
     BoxedCells(min_, max_, center_, 1:length(faces))
 end
 
-valid_partition(p::BitVector) = 0 < sum(p) < length(p) # must contain true and false
-partitions_unfiltered(m::Matrix) = (m[:,i] .< m[j,i] for i in 1:size(m)[2] for j in 1:size(m)[1])
+Base.length(bc::BoxedCells) = length(bc.indices)
 
-"""
-Returns an iterator over all potential partitions.
-
-The partition are represented as bitarrays.
-
-A partition is constructed by dividing the cells (defined by their center
-coordinate) at a point along an axis (x, y or z).
-"""
-partitions(m::Matrix) = (p for p in partitions_unfiltered(m) if valid_partition(p))
-partitions(bc::BoxedCells) = partitions(center(bc))
-
-function subdivide(bc::BoxedCells, partition::BitVector)
-    p, np = partition, .~partition
-    bc1 = BoxedCells(bc.min[ p,:], bc.max[ p,:], bc.indices[ p])
-    bc2 = BoxedCells(bc.min[np,:], bc.max[np,:], bc.indices[np])
-    bc1, bc2
+function Base.sort!(bc::BoxedCells, i::Int)
+    perm          = sortperm(bc.center[i, :])
+    bc.min[:]     = bc.min[:, perm]
+    bc.max[:]     = bc.max[:, perm]
+    bc.center[:]  = bc.center[:, perm]
+    bc.indices[:] = bc.indices[perm]
+    nothing
 end
 
-function area(bc::BoxedCells, partition)
-    max_ = @view bc.max[partition,:]
-    min_ = @view bc.min[partition,:]
-    diag = maximum(max_, dims=1) - minimum(min_, dims=1)
-    _area(diag)
+function Base.reverse!(bc::BoxedCells)
+    bc.min[:] = bc.min[:, end:-1:1]
+    bc.max[:] = bc.max[:, end:-1:1]
+    bc.center[:] = bc.center[:, end:-1:1]
+    bc.indices[:] = bc.indices[end:-1:1]
+    nothing
 end
 
-function partition_cost(bc::BoxedCells, partition)
-    p, np = partition, .~partition
-    sum(p) * area(bc, p) + sum(np) * area(bc, np)
-end
-
-function optimal_partition(bc::BoxedCells)
-    function folder(prevstate, partition)
-        optpart, optval = prevstate
-        checkval = partition_cost(bc, partition)
-        checkval < optval ? (partition, checkval) : prevstate
+function set_area!(area::Vector, bc::BoxedCells)
+    tmpmin, tmpmax = bc.min[:,1], bc.max[:,1]
+    area[1] = _area(tmpmax .- tmpmin)
+    for i in 2:(length(bc)-1)
+        tmpmin[:] = min.(tmpmin, bc.min[:,i])
+        tmpmax[:] = max.(tmpmax, bc.max[:,i])
+        area[i] = _area(tmpmax .- tmpmin)
     end
-    foldl(folder, partitions(bc), init=(BitVector(undef, length(bc)), Inf32))
+    nothing
+end
+
+function optimal_split(bc::BoxedCells, axis::Int, buffer1::Vector{FloatT}, buffer2::Vector{FloatT})
+    N = length(bc)
+    @assert N-1 == length(buffer1) == length(buffer2)
+    sort!(bc, axis)
+    set_area!(buffer1, bc)
+    reverse!(bc)
+    set_area!(buffer2, bc)
+    return minimum((cost=i*a1_ + (N-i)*a2_, index=i, sortaxis=axis)
+                   for (i, (a1_, a2_)) in enumerate(zip(buffer1,reverse(buffer2))))
+end
+
+function optimal_split(bc::BoxedCells)
+    N = length(bc)
+    # create buffers
+    buffer1 = Vector{Float32}(undef, N-1)
+    buffer2 = Vector{Float32}(undef, N-1)
+    min(optimal_split(bc, 1, buffer1, buffer2),
+        optimal_split(bc, 2, buffer1, buffer2),
+        optimal_split(bc, 3, buffer1, buffer2))
+end
+
+function subdivide(bc::BoxedCells, optsplit)
+    i, axis = optsplit.index, optsplit.sortaxis
+    sort!(bc, axis)
+    (BoxedCells(bc.min[:,1:i], bc.max[:,1:i], bc.center[:,1:i], bc.indices[1:i]),
+     BoxedCells(bc.min[:,i+1:end],bc.max[:,i+1:end], bc.center[:,i+1:end], bc.indices[i+1:end]))
 end

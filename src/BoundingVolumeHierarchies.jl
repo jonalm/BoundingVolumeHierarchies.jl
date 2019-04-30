@@ -24,14 +24,12 @@ _area(d)   = 2(d[1]*d[2] + d[2]*d[3] + d[3]*d[1])
 _volume(d) = d[1]*d[2]*d[3]
 
 include("BoxedCells.jl")
-include("BoundingVolumes.jl")
+include("AABB.jl") # axis aligned bounded box
 include("BVH.jl")
 
-
+a=3
 export
-    # BoxedCells.jl
-    BoxedCells,
-    optimal_partition,
+    a,
     # BoundingVolumes.jl
     AABB,
     vertices,

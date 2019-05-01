@@ -26,13 +26,14 @@ function intersection(s::Segment, cell::RectCellT, cell_normal::PointT)
     return true
 end
 
-intersection(s::Segment, cell) = intersection(s, cell, _normal(cell))
-function intersection(s::Segment, aabb::AABB)
-    inside(s.a, aabb) && return true
-    inside(s.b, aabb) && return true
+function intersection_faces(s::Segment, aabb::AABB)
     ve, fa, no = vertices(aabb), faces(aabb), normals(aabb)
     any(intersection(s, ve[f], n) for (f,n) in zip(fa, no))
 end
+
+intersection(s::Segment, cell) = intersection(s, cell, _normal(cell))
+intersection(s::Segment, aabb::AABB) = 
+    inside(s.a, aabb) || inside(s.b, aabb) || intersection_faces(s, aabb)
 
 function intersection(s::Segment, bvh::BVH, vertices, faces)
     for inds in faceindices(aabb->intersection(s, aabb), bvh)

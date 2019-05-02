@@ -27,7 +27,7 @@ See `examples/example.jl` for more details.
 Assume that the triangular mesh is identified by a `vertices` buffer, a `faces` buffer,
 (containing triplets of indices of the vertex buffer which identifies mesh cells) and a `facenormals` buffer which contains normal vectors for each cell.
 
-Create a bounding volume hierarchy of the indices of the faces:
+Create a bounding volume hierarchy of the indices of the faces. The cells are divided greedily based on a "Surface Area Heuristic" method [described in section 2.2 here](http://www.sci.utah.edu/~wald/Publications/2007/ParallelBVHBuild/fastbuild.pdf).
 ```
 bvh = buildBVM(vertices, faces)
 ```

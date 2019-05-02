@@ -1,6 +1,8 @@
 struct BVHParam
     SAHfrac::FloatT
-    BVHParam(SAHfrac=12.0f0) = new(SAHfrac) # default values
+    # default values seems reasonable based on trial and error
+    # needs thourough testing
+    BVHParam(SAHfrac=50f0) = new(SAHfrac)
 end
 
 struct BVH{N, C}
@@ -23,14 +25,15 @@ _children(::_Leaf, param::BVHParam) = ()
 function _children(n::_Branch, bp::BVHParam)
     bc = n.data
     N, A = length(bc), area(AABB(bc))
-    optsplit = optimal_split(bc)
-    # optsplit.cost / A approximates the expected number of checks when partitioning the cells
-    if  N - optsplit.cost/A > bp.SAHfrac
-        bc1, bc2 = subdivide(bc, optsplit)
-        return (_Branch(bc1), _Branch(bc2))
-    else
-        return (_Leaf(bc),)
+    if N>1
+        optsplit = optimal_split(bc)
+        # optsplit.cost / A approximates the expected number of checks when partitioning the cells
+        if  N - optsplit.cost/A > bp.SAHfrac
+            bc1, bc2 = subdivide(bc, optsplit)
+            return (_Branch(bc1), _Branch(bc2))
+        end
     end
+    return (_Leaf(bc),)
 end
 _buildBVH(n::_Leaf, ::BVHParam) = FaceIndices(n.data.indices)
 _buildBVH(n::_Branch, bp::BVHParam) = BVH(AABB(n.data), [_buildBVH(c, bp) for c in _children(n, bp)]...)
@@ -50,7 +53,7 @@ for all parent axis aligned bounding boxes `x`.
 faceindices(f, n::BVH{N, C}) where {N, C<:FaceIndices} = (c.inds for c in n.children)
 faceindices(f, n::BVH{N, C}) where {N, C<:BVH} = Iterators.flatten(faceindices(f, c)
     for c in children(n) if isa(c, FaceIndices) || f(c.aabb))
-faceindices(head::BVH{N, C}) where {N, C<:BVH} = filter_faceindices(x->true, head)
+faceindices(head::BVH{N, C}) where {N, C<:BVH} = faceindices(x->true, head)
 
 """
 Returns an iterator over a filtered subset of the bounding volumes in the BVH

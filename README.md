@@ -1,7 +1,7 @@
 
 
 This package implements some basic functionality of a __Bounding Volume Hierarchy__ (`BVH`) of a triangular mesh, in particular a `intersection(segment::Segment, bvh::BVH, vertices, faces, facenormals)` function which gives `true/false` if the segment intersects with the mesh.
-As the face indices are stored in a `BVH`, this method reduces the number of evaluated cell intersection checks.
+As the face indices are stored in a `BVH`, this method seeks to minimize the number of evaluated cell intersection checks.
 
 The bounding volumes are axis aligned bounding boxes (`AABB`). The implementation uses `GeometryTypes.jl`, in particular it assumes that all points is of type `Point{3, Float32}` (denoted `PointT` in the code).
 

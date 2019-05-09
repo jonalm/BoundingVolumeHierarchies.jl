@@ -5,7 +5,7 @@ As the face indices are stored in a `BVH`, this method seeks to minimize the nee
 
 The bounding volumes are axis aligned bounding boxes (`AABB`). The implementation uses `GeometryTypes.jl`, in particular it assumes that all points is of type `Point{3, Float32}` (denoted `PointT` in the code).
 
-_Discalimer_: If you look for performant BVH library for e.g. ray tracing, look elsewhere. I made this mostly for educational purposes, and had no prior experience in computer graphics. Please let me know if there are simple algorithmic or implementation specific changes which could speed it up.
+_Discalimer_: If you look for a performant BVH library for e.g. ray tracing, look elsewhere. I made this mostly for educational purposes, and had no prior experience in computer graphics. Please let me know if there are simple algorithmic or implementation specific changes which could speed it up.
 
 ### Images
 

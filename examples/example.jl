@@ -13,7 +13,7 @@ catmesh = Makie.loadasset("cat.obj")
 catverts, catfaces = catmesh.vertices, catmesh.faces
 catnormals = [_normal(catverts[f]) for f in catfaces] # mesh cell normals
 
-catBVH = buildBVH(catverts, catfaces)
+catBVH = @time buildBVH(catverts, catfaces)
 
 
 ## Plot the cat mesh together with the bounding boxes in the Bounding Volume Hierarchy
